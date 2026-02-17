@@ -116,35 +116,35 @@ class BlockManager:
         block_table = seq.block_table
         last_block = self.blocks[block_table[-1]]
 
-    # --- 分支 1: 刚跨入新块 (New Block Needed) ---
-    if len(seq) % self.block_size == 1:
-        # 断言：上一个块肯定已经封存归档了 (hash != -1)
-        assert last_block.hash != -1
-        # 动作：开新房
-        block_id = self.free_block_ids[0]     # 拿钥匙
-        self._allocate_block(block_id)        # 登记
-        block_table.append(block_id)          # 给客人房卡
-    
-    # --- 分支 2: 当前块刚填满 (Block Full & Finalize) ---
-    elif len(seq) % self.block_size == 0:
-        # 断言：这个块还在用，还没归档 (hash == -1)
-        assert last_block.hash == -1
+        # --- 分支 1: 刚跨入新块 (New Block Needed) ---
+        if len(seq) % self.block_size == 1:
+            # 断言：上一个块肯定已经封存归档了 (hash != -1)
+            assert last_block.hash != -1
+            # 动作：开新房
+            block_id = self.free_block_ids[0]     # 拿钥匙
+            self._allocate_block(block_id)        # 登记
+            block_table.append(block_id)          # 给客人房卡
         
-        # 动作：归档封存 (生成指纹，存入缓存)
-        # 1. 拿到这个块里所有的 Token
-        token_ids = seq.block(seq.num_blocks-1)
-        # 2. 拿到前一个块的哈希 (为了做链式哈希)
-        prefix = self.blocks[block_table[-2]].hash if len(block_table) > 1 else -1
-        # 3. 计算当前块的哈希
-        h = self.compute_hash(token_ids, prefix)
-        # 4. 更新块信息 (存入 hash 和 token_ids)
-        last_block.update(h, token_ids)
-        # 5. 记入名册 (hash -> block_id)  这样以后别的请求如果生成了一样的内容，就可以复用这个块了！
-        self.hash_to_block_id[h] = last_block.block_id
-        
-    # --- 分支 3: 还在当前块中间 (Normal Append) ---
-    else:
-        # 断言：还没填满，所以不能有哈希
-        assert last_block.hash == -1
-        # 什么都不用做！显存是预先分配好的，往里填数据是 Kernel 的事，
-        # BlockManager 只管“块”级别的申请和释放。
+        # --- 分支 2: 当前块刚填满 (Block Full & Finalize) ---
+        elif len(seq) % self.block_size == 0:
+            # 断言：这个块还在用，还没归档 (hash == -1)
+            assert last_block.hash == -1
+            
+            # 动作：归档封存 (生成指纹，存入缓存)
+            # 1. 拿到这个块里所有的 Token
+            token_ids = seq.block(seq.num_blocks-1)
+            # 2. 拿到前一个块的哈希 (为了做链式哈希)
+            prefix = self.blocks[block_table[-2]].hash if len(block_table) > 1 else -1
+            # 3. 计算当前块的哈希
+            h = self.compute_hash(token_ids, prefix)
+            # 4. 更新块信息 (存入 hash 和 token_ids)
+            last_block.update(h, token_ids)
+            # 5. 记入名册 (hash -> block_id)  这样以后别的请求如果生成了一样的内容，就可以复用这个块了！
+            self.hash_to_block_id[h] = last_block.block_id
+            
+        # --- 分支 3: 还在当前块中间 (Normal Append) ---
+        else:
+            # 断言：还没填满，所以不能有哈希
+            assert last_block.hash == -1
+            # 什么都不用做！显存是预先分配好的，往里填数据是 Kernel 的事，
+            # BlockManager 只管“块”级别的申请和释放。
