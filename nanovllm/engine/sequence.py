@@ -77,7 +77,7 @@ class Sequence:
         # 最后一块的token长度= 总长度 - (最后一块之前的完整块数 * 块大小)
         return self.num_tokens - (self.num_blocks - 1) * self.block_size
 
-    def block(self, i): #获取某个块的数据 (block)
+    def block(self, i): #获取某个块的数据 (block) (里面存的都是token id)
         assert 0 <= i < self.num_blocks # 确保索引i在范围内
         # 切片操作：取出第 i 个逻辑块对应的所有 Token ID
         return self.token_ids[i*self.block_size: (i+1)*self.block_size]
